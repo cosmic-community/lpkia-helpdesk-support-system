@@ -3,34 +3,59 @@
 import { useState } from 'react'
 import Link from 'next/link'
 import { formatDate, getStatusColor, getPriorityColor, getDepartmentColor } from '@/lib/utils'
-import type { SupportTicket, TeamMember, TicketStatus, TicketCategory } from '@/types'
 
-interface AdminDashboardProps {
-  tickets: SupportTicket[]
-  teamMembers: TeamMember[]
+interface Ticket {
+  id: number
+  ticket_number: string
+  student_name: string
+  student_email: string
+  student_phone?: string
+  category: string
+  subject: string
+  description: string
+  status: string
+  priority: string
+  assigned_username?: string
+  assigned_name?: string
+  created_at: string
+  updated_at: string
 }
 
-export default function AdminDashboard({ tickets, teamMembers }: AdminDashboardProps) {
-  const [filterStatus, setFilterStatus] = useState<TicketStatus | 'All'>('All')
-  const [filterCategory, setFilterCategory] = useState<TicketCategory | 'All'>('All')
+interface AdminDashboardProps {
+  tickets: Ticket[]
+  currentUser: {
+    id: number
+    username: string
+    full_name: string
+    email: string
+    department: string
+    role: string
+  }
+  onLogout: () => void
+  onRefresh: () => void
+}
 
-  const filteredTickets = tickets.filter((ticket) => {
-    if (!ticket.metadata) return false
-    
-    if (filterStatus !== 'All' && ticket.metadata.status !== filterStatus) {
-      return false
-    }
-    if (filterCategory !== 'All' && ticket.metadata.category !== filterCategory) {
+export default function AdminDashboard({ tickets, currentUser, onLogout, onRefresh }: AdminDashboardProps) {
+  const [filterStatus, setFilterStatus] = useState<string>('All')
+  const [filterCategory, setFilterCategory] = useState<string>('All')
+
+  // Filter tickets by user's department
+  const departmentTickets = tickets.filter((ticket) => 
+    filterCategory === 'All' || ticket.category === filterCategory
+  )
+
+  const filteredTickets = departmentTickets.filter((ticket) => {
+    if (filterStatus !== 'All' && ticket.status !== filterStatus) {
       return false
     }
     return true
   })
 
   const stats = {
-    total: tickets.length,
-    open: tickets.filter((t) => t.metadata?.status === 'Open').length,
-    inProgress: tickets.filter((t) => t.metadata?.status === 'In Progress').length,
-    resolved: tickets.filter((t) => t.metadata?.status === 'Resolved').length,
+    total: departmentTickets.length,
+    open: departmentTickets.filter((t) => t.status === 'Open').length,
+    inProgress: departmentTickets.filter((t) => t.status === 'In Progress').length,
+    resolved: departmentTickets.filter((t) => t.status === 'Resolved').length,
   }
 
   return (
@@ -39,10 +64,32 @@ export default function AdminDashboard({ tickets, teamMembers }: AdminDashboardP
       <div className="bg-white border-b border-gray-200">
         <div className="max-w-7xl mx-auto px-4 py-6 sm:px-6 lg:px-8">
           <div className="flex items-center justify-between">
-            <h1 className="text-3xl font-bold text-gray-900">Admin Dashboard</h1>
-            <Link href="/" className="btn-secondary">
-              Kembali ke Home
-            </Link>
+            <div>
+              <h1 className="text-3xl font-bold text-gray-900">Admin Dashboard</h1>
+              <p className="mt-1 text-sm text-gray-600">
+                Logged in as: <span className="font-medium">{currentUser.full_name}</span>
+                {' '}(<span className={`badge ${getDepartmentColor(currentUser.department)}`}>
+                  {currentUser.department}
+                </span>)
+              </p>
+            </div>
+            <div className="flex gap-3">
+              <button 
+                onClick={onRefresh}
+                className="btn-secondary"
+              >
+                🔄 Refresh
+              </button>
+              <button 
+                onClick={onLogout}
+                className="btn-secondary"
+              >
+                Logout
+              </button>
+              <Link href="/" className="btn-secondary">
+                Kembali ke Home
+              </Link>
+            </div>
           </div>
         </div>
       </div>
@@ -78,7 +125,7 @@ export default function AdminDashboard({ tickets, teamMembers }: AdminDashboardP
               <select
                 className="input-field"
                 value={filterStatus}
-                onChange={(e) => setFilterStatus(e.target.value as TicketStatus | 'All')}
+                onChange={(e) => setFilterStatus(e.target.value)}
               >
                 <option value="All">Semua Status</option>
                 <option value="Open">Open</option>
@@ -94,7 +141,7 @@ export default function AdminDashboard({ tickets, teamMembers }: AdminDashboardP
               <select
                 className="input-field"
                 value={filterCategory}
-                onChange={(e) => setFilterCategory(e.target.value as TicketCategory | 'All')}
+                onChange={(e) => setFilterCategory(e.target.value)}
               >
                 <option value="All">Semua Kategori</option>
                 <option value="BAU">BAU</option>
@@ -145,54 +192,50 @@ export default function AdminDashboard({ tickets, teamMembers }: AdminDashboardP
                     </td>
                   </tr>
                 ) : (
-                  filteredTickets.map((ticket) => {
-                    if (!ticket.metadata) return null
-                    
-                    return (
-                      <tr key={ticket.id} className="hover:bg-gray-50">
-                        <td className="px-6 py-4 whitespace-nowrap">
-                          <div className="font-mono text-sm font-medium text-gray-900">
-                            {ticket.metadata.ticket_number}
-                          </div>
-                        </td>
-                        <td className="px-6 py-4 whitespace-nowrap">
-                          <div className="text-sm text-gray-900">{ticket.metadata.student_name}</div>
-                          <div className="text-xs text-gray-500">{ticket.metadata.student_email}</div>
-                        </td>
-                        <td className="px-6 py-4">
-                          <div className="text-sm text-gray-900 max-w-xs truncate">
-                            {ticket.metadata.subject}
-                          </div>
-                        </td>
-                        <td className="px-6 py-4 whitespace-nowrap">
-                          <span className={`badge ${getDepartmentColor(ticket.metadata.category)}`}>
-                            {ticket.metadata.category}
-                          </span>
-                        </td>
-                        <td className="px-6 py-4 whitespace-nowrap">
-                          <span className={`badge ${getStatusColor(ticket.metadata.status)}`}>
-                            {ticket.metadata.status}
-                          </span>
-                        </td>
-                        <td className="px-6 py-4 whitespace-nowrap">
-                          <span className={`badge ${getPriorityColor(ticket.metadata.priority)}`}>
-                            {ticket.metadata.priority}
-                          </span>
-                        </td>
-                        <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                          {formatDate(ticket.created_at)}
-                        </td>
-                        <td className="px-6 py-4 whitespace-nowrap">
-                          <Link
-                            href={`/ticket/${ticket.slug}`}
-                            className="text-blue-600 hover:text-blue-900 text-sm font-medium"
-                          >
-                            Lihat Detail
-                          </Link>
-                        </td>
-                      </tr>
-                    )
-                  })
+                  filteredTickets.map((ticket) => (
+                    <tr key={ticket.id} className="hover:bg-gray-50">
+                      <td className="px-6 py-4 whitespace-nowrap">
+                        <div className="font-mono text-sm font-medium text-gray-900">
+                          {ticket.ticket_number}
+                        </div>
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap">
+                        <div className="text-sm text-gray-900">{ticket.student_name}</div>
+                        <div className="text-xs text-gray-500">{ticket.student_email}</div>
+                      </td>
+                      <td className="px-6 py-4">
+                        <div className="text-sm text-gray-900 max-w-xs truncate">
+                          {ticket.subject}
+                        </div>
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap">
+                        <span className={`badge ${getDepartmentColor(ticket.category)}`}>
+                          {ticket.category}
+                        </span>
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap">
+                        <span className={`badge ${getStatusColor(ticket.status)}`}>
+                          {ticket.status}
+                        </span>
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap">
+                        <span className={`badge ${getPriorityColor(ticket.priority)}`}>
+                          {ticket.priority}
+                        </span>
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                        {formatDate(ticket.created_at)}
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap">
+                        <Link
+                          href={`/ticket/${ticket.ticket_number}`}
+                          className="text-blue-600 hover:text-blue-900 text-sm font-medium"
+                        >
+                          Lihat Detail
+                        </Link>
+                      </td>
+                    </tr>
+                  ))
                 )}
               </tbody>
             </table>

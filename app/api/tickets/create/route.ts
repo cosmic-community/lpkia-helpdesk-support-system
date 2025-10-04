@@ -1,8 +1,11 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { cosmic } from '@/lib/cosmic'
+import { initDatabase, ticketQueries } from '@/lib/db'
 import { generateTicketId } from '@/lib/utils'
 import { triggerNotification } from '@/lib/pusher'
 import { notifyTicketCreated } from '@/lib/whatsapp'
+
+// Initialize database on first request
+initDatabase()
 
 export async function POST(request: NextRequest) {
   try {
@@ -19,23 +22,20 @@ export async function POST(request: NextRequest) {
     // Generate unique ticket ID
     const ticketId = generateTicketId()
 
-    // Create ticket in Cosmic
-    const response = await cosmic.objects.insertOne({
-      type: 'support-tickets',
-      title: `${subject} - ${student_name}`,
-      slug: ticketId,
-      metadata: {
-        student_name,
-        student_email,
-        student_phone: student_phone || '',
-        category,
-        subject,
-        description,
-        status: 'Open',
-        priority: 'Medium',
-        ticket_number: ticketId,
-      },
+    // Create ticket in SQLite
+    ticketQueries.create({
+      ticket_number: ticketId,
+      student_name,
+      student_email,
+      student_phone: student_phone || '',
+      category,
+      subject,
+      description,
+      priority: 'Medium',
     })
+
+    // Get created ticket
+    const ticket = ticketQueries.getByTicketNumber(ticketId)
 
     // Trigger real-time notification
     await triggerNotification('tickets', 'new-ticket', {
@@ -60,14 +60,13 @@ export async function POST(request: NextRequest) {
         console.log('WhatsApp notification sent to student:', student_phone)
       } catch (error) {
         console.error('Failed to send WhatsApp to student:', error)
-        // Don't fail the ticket creation if WhatsApp fails
       }
     }
 
     return NextResponse.json({
       success: true,
       ticket_id: ticketId,
-      ticket: response.object,
+      ticket,
     })
   } catch (error) {
     console.error('Error creating ticket:', error)

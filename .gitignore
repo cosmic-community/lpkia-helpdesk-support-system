@@ -1,17 +1,17 @@
-// .gitignore
 # dependencies
-node_modules
-.pnp
+/node_modules
+/.pnp
 .pnp.js
 
 # testing
-coverage
+/coverage
 
 # next.js
-.next/
-out/
-build
-dist
+/.next/
+/out/
+
+# production
+/build
 
 # misc
 .DS_Store
@@ -23,11 +23,8 @@ yarn-debug.log*
 yarn-error.log*
 
 # local env files
+.env*.local
 .env
-.env.local
-.env.development.local
-.env.test.local
-.env.production.local
 
 # vercel
 .vercel
@@ -35,3 +32,10 @@ yarn-error.log*
 # typescript
 *.tsbuildinfo
 next-env.d.ts
+
+# SQLite database
+/data
+*.db
+*.db-journal
+*.db-wal
+*.db-shm

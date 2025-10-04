@@ -1,51 +1,49 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { cosmic } from '@/lib/cosmic'
+import { initDatabase, ticketQueries } from '@/lib/db'
 import { triggerNotification } from '@/lib/pusher'
 
-export async function POST(request: NextRequest) {
+// Initialize database on first request
+initDatabase()
+
+export async function PATCH(request: NextRequest) {
   try {
     const data = await request.json()
-    const { ticket_id, status, priority, assigned_to } = data
+    const { ticket_number, status, priority, assigned_to } = data
 
-    // Get ticket
-    const ticket = await cosmic.objects.findOne({
-      type: 'support-tickets',
-      slug: ticket_id,
-    })
+    if (!ticket_number) {
+      return NextResponse.json(
+        { success: false, error: 'Ticket number required' },
+        { status: 400 }
+      )
+    }
 
-    // Update ticket - only include changed fields
-    const updateData: any = {}
-    
+    // Update ticket
     if (status) {
-      updateData.status = status
+      ticketQueries.updateStatus(ticket_number, status)
     }
-    
+
     if (priority) {
-      updateData.priority = priority
+      ticketQueries.updatePriority(ticket_number, priority)
     }
-    
+
     if (assigned_to) {
-      const teamMember = await cosmic.objects.findOne({
-        type: 'team-members',
-        id: assigned_to,
-      })
-      updateData.assigned_to = teamMember.object
+      ticketQueries.assignTo(ticket_number, assigned_to)
     }
 
-    const response = await cosmic.objects.updateOne(ticket.object.id, {
-      metadata: updateData,
-    })
+    // Get updated ticket
+    const ticket = ticketQueries.getByTicketNumber(ticket_number)
 
-    // Trigger notification
-    await triggerNotification(`ticket-${ticket_id}`, 'status-change', {
-      ticket_id,
-      status: status || ticket.object.metadata.status,
+    // Trigger real-time notification
+    await triggerNotification('tickets', 'ticket-updated', {
+      ticket_number,
+      status: ticket?.status,
+      priority: ticket?.priority,
       timestamp: new Date().toISOString(),
     })
 
     return NextResponse.json({
       success: true,
-      ticket: response.object,
+      ticket,
     })
   } catch (error) {
     console.error('Error updating ticket:', error)

@@ -1,37 +1,37 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { cosmic } from '@/lib/cosmic'
+import { initDatabase, messageQueries, ticketQueries } from '@/lib/db'
 import { triggerNotification } from '@/lib/pusher'
 import { notifyNewMessage, getSupportTeamPhone } from '@/lib/whatsapp'
+
+// Initialize database on first request
+initDatabase()
 
 export async function POST(request: NextRequest) {
   try {
     const data = await request.json()
-    const { ticket_id, sender_name, sender_type, message } = data
+    const { ticket_number, sender_name, sender_type, message } = data
 
-    // Get ticket object
-    const ticketResponse = await cosmic.objects.findOne({
-      type: 'support-tickets',
-      slug: ticket_id,
-    })
+    // Get ticket
+    const ticket = ticketQueries.getByTicketNumber(ticket_number)
 
-    const ticket = ticketResponse.object
+    if (!ticket) {
+      return NextResponse.json(
+        { success: false, error: 'Ticket not found' },
+        { status: 404 }
+      )
+    }
 
     // Create message
-    const response = await cosmic.objects.insertOne({
-      type: 'ticket-messages',
-      title: `Message for ${ticket_id}`,
-      metadata: {
-        ticket: ticket,
-        sender_name,
-        sender_type,
-        message,
-        timestamp: new Date().toISOString(),
-      },
+    const result = messageQueries.create({
+      ticket_id: ticket.id,
+      sender_name,
+      sender_type,
+      message,
     })
 
     // Trigger real-time notification
-    await triggerNotification(`ticket-${ticket_id}`, 'new-message', {
-      message_id: response.object.id,
+    await triggerNotification(`ticket-${ticket_number}`, 'new-message', {
+      message_id: result.lastInsertRowid,
       sender_name,
       sender_type,
       message,
@@ -42,11 +42,11 @@ export async function POST(request: NextRequest) {
     try {
       if (sender_type === 'Student') {
         // Student sent a message - notify support team
-        const supportPhone = getSupportTeamPhone(ticket.metadata.category)
+        const supportPhone = getSupportTeamPhone(ticket.category)
         
         if (supportPhone) {
           await notifyNewMessage(supportPhone, {
-            ticketNumber: ticket_id,
+            ticketNumber: ticket_number,
             senderName: sender_name,
             senderType: sender_type,
             message,
@@ -56,11 +56,11 @@ export async function POST(request: NextRequest) {
         }
       } else {
         // Support team sent a message - notify student
-        const studentPhone = ticket.metadata.student_phone
+        const studentPhone = ticket.student_phone
         
         if (studentPhone) {
           await notifyNewMessage(studentPhone, {
-            ticketNumber: ticket_id,
+            ticketNumber: ticket_number,
             senderName: sender_name,
             senderType: sender_type,
             message,
@@ -71,12 +71,11 @@ export async function POST(request: NextRequest) {
       }
     } catch (error) {
       console.error('Failed to send WhatsApp notification:', error)
-      // Don't fail the message creation if WhatsApp fails
     }
 
     return NextResponse.json({
       success: true,
-      message: response.object,
+      message_id: result.lastInsertRowid,
     })
   } catch (error) {
     console.error('Error sending message:', error)

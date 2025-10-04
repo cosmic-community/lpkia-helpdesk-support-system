@@ -1,19 +1,22 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { getTicketMessages } from '@/lib/cosmic'
+import { initDatabase, messageQueries } from '@/lib/db'
+
+// Initialize database on first request
+initDatabase()
 
 export async function GET(request: NextRequest) {
   try {
-    const searchParams = request.nextUrl.searchParams
-    const ticketId = searchParams.get('ticket_id')
+    const { searchParams } = new URL(request.url)
+    const ticketNumber = searchParams.get('ticket_number')
 
-    if (!ticketId) {
+    if (!ticketNumber) {
       return NextResponse.json(
-        { success: false, error: 'Ticket ID required' },
+        { success: false, error: 'Ticket number required' },
         { status: 400 }
       )
     }
 
-    const messages = await getTicketMessages(ticketId)
+    const messages = messageQueries.getByTicketNumber(ticketNumber)
 
     return NextResponse.json({
       success: true,
