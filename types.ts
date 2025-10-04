@@ -73,6 +73,46 @@ export interface SupportCategory extends CosmicObject {
   };
 }
 
+// Database model interfaces
+export interface DBUser {
+  id: number;
+  username: string;
+  full_name: string;
+  email: string;
+  department: Department;
+  role: string;
+  status: MemberStatus;
+  created_at: string;
+}
+
+export interface DBTicket {
+  id: number;
+  ticket_number: string;
+  student_name: string;
+  student_email: string;
+  student_phone: string;
+  category: TicketCategory;
+  subject: string;
+  description: string;
+  status: TicketStatus;
+  priority: TicketPriority;
+  assigned_to: number | null;
+  assigned_username?: string;
+  assigned_name?: string;
+  resolved_at: string | null;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface DBMessage {
+  id: number;
+  ticket_id: number;
+  sender_name: string;
+  sender_type: SenderType;
+  message: string;
+  created_at: string;
+}
+
 // Type literals
 export type TicketCategory = 'BAU' | 'BAA' | 'MIS';
 export type TicketStatus = 'Open' | 'In Progress' | 'Resolved' | 'Closed';
