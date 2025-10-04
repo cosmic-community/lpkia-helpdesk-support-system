@@ -8,8 +8,35 @@ initDatabase()
 
 export async function POST(request: NextRequest) {
   try {
-    const data = await request.json()
+    // Check if request has a body
+    const text = await request.text()
+    if (!text || text.trim() === '') {
+      return NextResponse.json(
+        { success: false, error: 'Request body is required' },
+        { status: 400 }
+      )
+    }
+
+    // Parse JSON safely
+    let data
+    try {
+      data = JSON.parse(text)
+    } catch (parseError) {
+      return NextResponse.json(
+        { success: false, error: 'Invalid JSON in request body' },
+        { status: 400 }
+      )
+    }
+
     const { ticket_number, sender_name, sender_type, message } = data
+
+    // Validate required fields
+    if (!ticket_number || !sender_name || !sender_type || !message) {
+      return NextResponse.json(
+        { success: false, error: 'Missing required fields' },
+        { status: 400 }
+      )
+    }
 
     // Get ticket
     const ticket = ticketQueries.getByTicketNumber(ticket_number)

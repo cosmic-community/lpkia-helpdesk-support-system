@@ -7,7 +7,26 @@ initDatabase()
 
 export async function PATCH(request: NextRequest) {
   try {
-    const data = await request.json()
+    // Check if request has a body
+    const text = await request.text()
+    if (!text || text.trim() === '') {
+      return NextResponse.json(
+        { success: false, error: 'Request body is required' },
+        { status: 400 }
+      )
+    }
+
+    // Parse JSON safely
+    let data
+    try {
+      data = JSON.parse(text)
+    } catch (parseError) {
+      return NextResponse.json(
+        { success: false, error: 'Invalid JSON in request body' },
+        { status: 400 }
+      )
+    }
+
     const { ticket_number, status, priority, assigned_to } = data
 
     if (!ticket_number) {
