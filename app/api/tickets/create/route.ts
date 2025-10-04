@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { cosmic } from '@/lib/cosmic'
 import { generateTicketId } from '@/lib/utils'
 import { triggerNotification } from '@/lib/pusher'
+import { notifyTicketCreated } from '@/lib/whatsapp'
 
 export async function POST(request: NextRequest) {
   try {
@@ -45,6 +46,23 @@ export async function POST(request: NextRequest) {
       subject,
       timestamp: new Date().toISOString(),
     })
+
+    // Send WhatsApp notification to student
+    if (student_phone) {
+      try {
+        await notifyTicketCreated(student_phone, {
+          ticketNumber: ticketId,
+          studentName: student_name,
+          category,
+          subject,
+          description,
+        })
+        console.log('WhatsApp notification sent to student:', student_phone)
+      } catch (error) {
+        console.error('Failed to send WhatsApp to student:', error)
+        // Don't fail the ticket creation if WhatsApp fails
+      }
+    }
 
     return NextResponse.json({
       success: true,

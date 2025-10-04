@@ -30,14 +30,19 @@ export default function NewTicketForm() {
       const result = await response.json()
 
       if (result.success) {
-        alert(`Tiket berhasil dibuat!\n\nTicket ID: ${result.ticket_id}\n\nSimpan ID ini untuk melacak tiket Anda.`)
+        const hasPhone = formData.student_phone.trim() !== ''
+        const phoneMessage = hasPhone 
+          ? '\n\n📱 Notifikasi WhatsApp telah dikirim ke nomor Anda!' 
+          : '\n\n💡 Tip: Tambahkan nomor WhatsApp untuk menerima notifikasi otomatis!'
+        
+        alert(`✅ Tiket berhasil dibuat!${phoneMessage}\n\n🎫 Ticket ID: ${result.ticket_id}\n\nSimpan ID ini untuk melacak tiket Anda.`)
         router.push(`/ticket/${result.ticket_id}`)
       } else {
-        alert('Gagal membuat tiket. Silakan coba lagi.')
+        alert('❌ Gagal membuat tiket. Silakan coba lagi.')
       }
     } catch (error) {
       console.error('Error:', error)
-      alert('Terjadi kesalahan. Silakan coba lagi.')
+      alert('❌ Terjadi kesalahan. Silakan coba lagi.')
     } finally {
       setLoading(false)
     }
@@ -76,15 +81,19 @@ export default function NewTicketForm() {
 
         <div>
           <label className="block text-sm font-medium text-gray-700 mb-2">
-            Nomor Telepon (Opsional)
+            Nomor WhatsApp (Untuk Notifikasi Otomatis) *
           </label>
           <input
             type="tel"
+            required
             className="input-field"
             value={formData.student_phone}
             onChange={(e) => setFormData({ ...formData, student_phone: e.target.value })}
-            placeholder="08xxxxxxxxxx"
+            placeholder="08xxxxxxxxxx atau 628xxxxxxxxxx"
           />
+          <p className="mt-1 text-sm text-gray-500">
+            📱 Anda akan menerima notifikasi WhatsApp untuk update tiket
+          </p>
         </div>
 
         <div>
@@ -137,7 +146,7 @@ export default function NewTicketForm() {
             disabled={loading}
             className="btn-primary flex-1 disabled:opacity-50 disabled:cursor-not-allowed"
           >
-            {loading ? 'Membuat Tiket...' : 'Buat Tiket'}
+            {loading ? '⏳ Membuat Tiket...' : '✅ Buat Tiket'}
           </button>
           <button
             type="button"
