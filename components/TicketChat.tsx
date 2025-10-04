@@ -1,7 +1,7 @@
 'use client'
 
 import { useState, useEffect, useRef } from 'react'
-import { pusherClient } from '@/lib/pusher'
+import { getPusherClient } from '@/lib/pusher'
 import { formatDate } from '@/lib/utils'
 import type { SupportTicket, TicketMessage, SenderType } from '@/types'
 
@@ -20,6 +20,7 @@ export default function TicketChat({ ticket, initialMessages }: TicketChatProps)
 
   useEffect(() => {
     // Subscribe to real-time updates
+    const pusherClient = getPusherClient()
     const channel = pusherClient.subscribe(`ticket-${ticket.slug}`)
     
     channel.bind('new-message', (data: any) => {
