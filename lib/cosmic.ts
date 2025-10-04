@@ -19,7 +19,7 @@ export async function getSupportTickets() {
       .props(['id', 'title', 'slug', 'metadata', 'created_at'])
       .depth(1);
     
-    const tickets = response.objects.sort((a, b) => {
+    const tickets = response.objects.sort((a: any, b: any) => {
       const dateA = new Date(a.created_at).getTime();
       const dateB = new Date(b.created_at).getTime();
       return dateB - dateA;
@@ -64,7 +64,7 @@ export async function getTicketMessages(ticketId: string) {
     // Filter messages by ticket slug on client side
     const messages = response.objects
       .filter((msg: any) => msg.metadata?.ticket?.slug === ticketId)
-      .sort((a, b) => {
+      .sort((a: any, b: any) => {
         const dateA = new Date(a.metadata?.timestamp || a.created_at).getTime();
         const dateB = new Date(b.metadata?.timestamp || b.created_at).getTime();
         return dateA - dateB;
