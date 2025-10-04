@@ -9,7 +9,8 @@
     "lint": "next lint",
     "type-check": "tsc --noEmit",
     "prebuild": "bun run type-check",
-    "postbuild": "node scripts/inject-console-capture.js"
+    "postbuild": "node scripts/inject-console-capture.js",
+    "db:init": "node scripts/init-db.js"
   },
   "dependencies": {
     "next": "15.1.0",
@@ -18,12 +19,14 @@
     "@cosmicjs/sdk": "^1.5.5",
     "pusher": "^5.2.0",
     "pusher-js": "^8.4.0-rc2",
-    "date-fns": "^3.0.0"
+    "date-fns": "^3.0.0",
+    "better-sqlite3": "^9.2.2"
   },
   "devDependencies": {
     "@types/node": "^20.0.0",
     "@types/react": "^18.2.0",
     "@types/react-dom": "^18.2.0",
+    "@types/better-sqlite3": "^7.6.8",
     "typescript": "^5.0.0",
     "eslint": "^8.57.0",
     "eslint-config-next": "15.1.0",
