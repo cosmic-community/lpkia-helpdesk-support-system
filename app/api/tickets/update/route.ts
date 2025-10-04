@@ -33,11 +33,19 @@ export async function PATCH(request: NextRequest) {
     // Get updated ticket
     const ticket = ticketQueries.getByTicketNumber(ticket_number)
 
+    // Verify ticket exists before accessing properties
+    if (!ticket) {
+      return NextResponse.json(
+        { success: false, error: 'Ticket not found after update' },
+        { status: 404 }
+      )
+    }
+
     // Trigger real-time notification
     await triggerNotification('tickets', 'ticket-updated', {
       ticket_number,
-      status: ticket?.status,
-      priority: ticket?.priority,
+      status: ticket.status,
+      priority: ticket.priority,
       timestamp: new Date().toISOString(),
     })
 
