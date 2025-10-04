@@ -1,6 +1,7 @@
 import Database from 'better-sqlite3'
 import path from 'path'
 import fs from 'fs'
+import type { DBUser, DBTicket, DBMessage } from '@/types'
 
 // Database path
 const dbDir = path.join(process.cwd(), 'data')
@@ -100,18 +101,18 @@ export function initDatabase() {
 // User operations
 export const userQueries = {
   // Get user by username
-  getByUsername: (username: string) => {
-    return db.prepare('SELECT * FROM users WHERE username = ? AND status = ?').get(username, 'Active')
+  getByUsername: (username: string): DBUser | undefined => {
+    return db.prepare('SELECT * FROM users WHERE username = ? AND status = ?').get(username, 'Active') as DBUser | undefined
   },
 
   // Get all users by department
-  getByDepartment: (department: string) => {
-    return db.prepare('SELECT * FROM users WHERE department = ? AND status = ?').all(department, 'Active')
+  getByDepartment: (department: string): DBUser[] => {
+    return db.prepare('SELECT * FROM users WHERE department = ? AND status = ?').all(department, 'Active') as DBUser[]
   },
 
   // Get all users
-  getAll: () => {
-    return db.prepare('SELECT * FROM users WHERE status = ? ORDER BY department, full_name').all('Active')
+  getAll: (): DBUser[] => {
+    return db.prepare('SELECT * FROM users WHERE status = ? ORDER BY department, full_name').all('Active') as DBUser[]
   },
 
   // Create new user
@@ -166,45 +167,45 @@ export const ticketQueries = {
   },
 
   // Get ticket by ticket number
-  getByTicketNumber: (ticketNumber: string) => {
+  getByTicketNumber: (ticketNumber: string): DBTicket | undefined => {
     return db.prepare(`
       SELECT t.*, u.username as assigned_username, u.full_name as assigned_name
       FROM tickets t
       LEFT JOIN users u ON t.assigned_to = u.id
       WHERE t.ticket_number = ?
-    `).get(ticketNumber)
+    `).get(ticketNumber) as DBTicket | undefined
   },
 
   // Get all tickets
-  getAll: () => {
+  getAll: (): DBTicket[] => {
     return db.prepare(`
       SELECT t.*, u.username as assigned_username, u.full_name as assigned_name
       FROM tickets t
       LEFT JOIN users u ON t.assigned_to = u.id
       ORDER BY t.created_at DESC
-    `).all()
+    `).all() as DBTicket[]
   },
 
   // Get tickets by category
-  getByCategory: (category: string) => {
+  getByCategory: (category: string): DBTicket[] => {
     return db.prepare(`
       SELECT t.*, u.username as assigned_username, u.full_name as assigned_name
       FROM tickets t
       LEFT JOIN users u ON t.assigned_to = u.id
       WHERE t.category = ?
       ORDER BY t.created_at DESC
-    `).all(category)
+    `).all(category) as DBTicket[]
   },
 
   // Get tickets by status
-  getByStatus: (status: string) => {
+  getByStatus: (status: string): DBTicket[] => {
     return db.prepare(`
       SELECT t.*, u.username as assigned_username, u.full_name as assigned_name
       FROM tickets t
       LEFT JOIN users u ON t.assigned_to = u.id
       WHERE t.status = ?
       ORDER BY t.created_at DESC
-    `).all(status)
+    `).all(status) as DBTicket[]
   },
 
   // Update ticket status
@@ -260,22 +261,22 @@ export const messageQueries = {
   },
 
   // Get messages by ticket ID
-  getByTicketId: (ticketId: number) => {
+  getByTicketId: (ticketId: number): DBMessage[] => {
     return db.prepare(`
       SELECT * FROM messages
       WHERE ticket_id = ?
       ORDER BY created_at ASC
-    `).all(ticketId)
+    `).all(ticketId) as DBMessage[]
   },
 
   // Get messages by ticket number
-  getByTicketNumber: (ticketNumber: string) => {
+  getByTicketNumber: (ticketNumber: string): DBMessage[] => {
     return db.prepare(`
       SELECT m.* FROM messages m
       JOIN tickets t ON m.ticket_id = t.id
       WHERE t.ticket_number = ?
       ORDER BY m.created_at ASC
-    `).all(ticketNumber)
+    `).all(ticketNumber) as DBMessage[]
   },
 }
 
