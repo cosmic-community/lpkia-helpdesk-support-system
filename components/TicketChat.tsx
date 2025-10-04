@@ -43,10 +43,12 @@ export default function TicketChat({ ticket, initialMessages }: TicketChatProps)
 
   const fetchMessages = async () => {
     try {
-      const response = await fetch(`/api/messages?ticket_id=${ticket.slug}`)
+      const response = await fetch(`/api/messages?ticket_number=${ticket.slug}`)
       if (response.ok) {
-        const data = await response.json()
-        setMessages(data.messages || [])
+        const result = await response.json()
+        if (result.success) {
+          setMessages(result.messages || [])
+        }
       }
     } catch (error) {
       console.error('Error fetching messages:', error)
@@ -68,22 +70,24 @@ export default function TicketChat({ ticket, initialMessages }: TicketChatProps)
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          ticket_id: ticket.slug,
+          ticket_number: ticket.slug,
           sender_name: senderName,
           sender_type: senderType,
           message: newMessage,
         }),
       })
 
-      if (response.ok) {
+      const result = await response.json()
+
+      if (result.success) {
         setNewMessage('')
         await fetchMessages()
       } else {
-        alert('Gagal mengirim pesan')
+        alert(`Gagal mengirim pesan: ${result.error || 'Unknown error'}`)
       }
     } catch (error) {
       console.error('Error sending message:', error)
-      alert('Terjadi kesalahan')
+      alert('Terjadi kesalahan saat mengirim pesan')
     } finally {
       setLoading(false)
     }

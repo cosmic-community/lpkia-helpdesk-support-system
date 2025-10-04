@@ -9,7 +9,26 @@ initDatabase()
 
 export async function POST(request: NextRequest) {
   try {
-    const data = await request.json()
+    // Check if request has a body
+    const text = await request.text()
+    if (!text || text.trim() === '') {
+      return NextResponse.json(
+        { success: false, error: 'Request body is required' },
+        { status: 400 }
+      )
+    }
+
+    // Parse JSON safely
+    let data
+    try {
+      data = JSON.parse(text)
+    } catch (parseError) {
+      return NextResponse.json(
+        { success: false, error: 'Invalid JSON in request body' },
+        { status: 400 }
+      )
+    }
+
     const {
       student_name,
       student_email,
@@ -18,6 +37,14 @@ export async function POST(request: NextRequest) {
       subject,
       description,
     } = data
+
+    // Validate required fields
+    if (!student_name || !student_email || !category || !subject || !description) {
+      return NextResponse.json(
+        { success: false, error: 'Missing required fields' },
+        { status: 400 }
+      )
+    }
 
     // Generate unique ticket ID
     const ticketId = generateTicketId()
